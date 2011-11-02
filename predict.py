@@ -4,25 +4,31 @@ from collections import defaultdict
 
 FILENAME = 'data/winestrain2.csv'
 
-#types = (('name', '|S137'), ('year', '<i4'), ('price', '<f8'), ('WS', '<i4'), ('RP', '<i4'), ('ST', '<i4'), ('WE', '<i4'), ('CG', '<i4'), ('GR', '<i4'), ('WN', '<i4'), ('BH', '<i4'), ('WS_1', '<i4'), ('Varietal', '|S31'), ('Country', '|S15'), ('SubRegion', '|S23'), ('Appellation', '|S32'), ('Alcohol', '<f8'))
+reader = csv.reader(open(FILENAME, 'r'), delimiter=',', quotechar='"')
 
-col_names = ['name', 'year', 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN', 'BH', 'WS1', 'Varietal', 'Country', 'SubRegion', 'Appellation', 'Alcohol' ]
+col_names = [ 'name', 'year', 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN', 'BH', 'WS1', 'Varietal', 'Country', 'SubRegion', 'Appellation', 'Alcohol' ]
+category_cols = [ 'name', 'Varietal', 'Country', 'SubRegion', 'Appellation' ]
+num_cols = [ 'year', 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN', 'BH', 'WS1', 'Alcohol' ]
 
-data = numpy.genfromtxt(FILENAME, delimiter=',', skip_header=1, comments='\\',# missing_values='NA',
-	names = col_names,
-	dtype = ['|S200', '<i4', '<f8', '<f8', '<f8', '<f8', '<f8', '<f8', '<f8', '<f8', '<f8', '<f8', '|S40', '|S40', '|S40', '|S40', '<f8'],
-	)
+data = defaultdict(list)
+i = 0
+for row in reader:
+    if i > 0:
+        for i,d in enumerate(row):
+            col = col_names[i]
+            if d == 'NA':
+                d = -1 if col in num_cols else ''
+            if col in num_cols:
+                try:
+                    d = float(d)
+                except:
+                    print d
+            data[ col ].append(d)
+    i += 1
 
-print data.shape
-
-#final_data = numpy.zeros((data.shape[0],len(col_names)))
-
-#for r_idx,d in enumerate(data):
-#	for c_idx,x in enumerate(col_names):
-#		final_data[r_idx,c_idx] = d[c_idx]
-
-#print final_data
-
-#print data[:10]
-
-#print a
+for col, vals in data.iteritems():
+    print col, len(vals)
+    if col in num_cols:
+        a = numpy.array(vals)
+        new_a = a[a <> -1]
+        print numpy.mean(new_a)
