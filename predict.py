@@ -2,6 +2,7 @@ import numpy, csv, random
 import scipy.spatial as spatial
 from StringIO import StringIO
 from collections import defaultdict
+from datatable import DataTable
 
 FILENAME = 'data/winestrain2.csv'
 
@@ -13,7 +14,7 @@ num_cols = [ 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN', 'BH', 'WS1', 'Al
 
 def parseName(name):
     sizes = ['187mL', '375mL', '375 mL', '500mL', '500 mL', '1.5L', '1.5 L', '3L', '3 L', '5L', '5 L', '6L', '6 L',]
-    print name
+    #print name
 
 def getSummaryStats(data):
     summary_vals = defaultdict(list)
@@ -23,13 +24,18 @@ def getSummaryStats(data):
         summary_vals[key].append( data['price'][i] )
     for key, vals in summary_vals.iteritems():
         a = numpy.array(vals)
-        print key,':',numpy.mean(a),numpy.std(a),len(vals)
+        #print key,':',numpy.mean(a),numpy.std(a),len(vals)
     return summary_vals
 
 def extractData(row):
     for i,d in enumerate(row):
         print d
 
+dt = DataTable(FILENAME)
+dt.filter( { 'Appellation': 'Napa Valley' } )
+
+exit()
+        
 data = defaultdict(list)
 i = 0
 for row in reader:
@@ -48,6 +54,12 @@ for row in reader:
             data[ col ].append(d)
     i += 1
 
+dt = DataTable(data)
+
+dt.filter( { 'Appellation': 'Napa Valley' } )
+
+exit()
+    
 for col, vals in data.iteritems():
     print col, len(vals),
     if col in num_cols:
