@@ -31,8 +31,39 @@ def extractData(row):
     for i,d in enumerate(row):
         print d
 
+def firstChar(val):
+    return val[0]
+
 dt = DataTable(FILENAME)
-dt.filter( { 'Appellation': 'Napa Valley' } )
+
+years = set(dt.getCol('year'))
+varietals = set(dt.getCol('Varietal'))
+countries = set(dt.getCol('Country'))
+subregions = set(dt.getCol('SubRegion'))
+appellations = set(dt.getCol('Appellation'))
+
+summary_info = {}
+for year in years:
+    for varietal in varietals:
+        for country in countries:
+            for subregion in subregions:
+                for appellation in appellations:
+                    dt_tmp = dt.copy()
+                    dt_tmp.filter( {'year': year,
+                                    'Varietal': varietal,
+                                    'Country': country,
+                                    'SubRegion': subregion,
+                                    'Appellation': appellation,
+                                    })
+                    prices = dt_tmp.getCol('price')
+                    summary_info[ (year, varietal, country, subregion, appellation) ] = ( len(prices), numpy.mean(prices), numpy.std(prices) )
+                    #print 'Year: %s, %d, %f, %f' % (year, len(prices), numpy.mean(prices), numpy.std(prices))
+
+print summary_info
+
+#dt.filter( { 'Appellation': 'Napa Valley' } )
+#dt.apply( firstChar, 'name', 'first_char', False)
+#d = dt.copy()
 
 exit()
         
@@ -57,6 +88,8 @@ for row in reader:
 dt = DataTable(data)
 
 dt.filter( { 'Appellation': 'Napa Valley' } )
+
+
 
 exit()
     

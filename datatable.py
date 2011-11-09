@@ -1,4 +1,5 @@
 import numpy, csv
+import copy as c
 from collections import defaultdict
 
 class DataTable:
@@ -16,6 +17,7 @@ class DataTable:
         header = None
         numeric_cols = set()
         non_numeric_cols = set()
+        non_numeric_cols.add('year')
         data = defaultdict(list)
         for row in reader:
             if header is None:
@@ -35,9 +37,11 @@ class DataTable:
                             d = self.text_to_int_map[d]
                         else:
                             self.text_to_int_map[d] = self.idx
+                            self.int_to_text_map[self.idx] = d
                             d = self.idx
                             self.idx += 1
                     data[ col ].append(d)
+        self.non_numeric_cols = non_numeric_cols
         for col in header:
             self.cols.append(col)
             self.col_map[col] = 'Text' if col in non_numeric_cols else 'Numeric'
@@ -55,11 +59,49 @@ class DataTable:
             col_idx = self.cols.index(key)
             int_val = self.text_to_int_map[val]
             if bit_vec is None:
-                bit_vec = self.data[:,col_idx] == int_val
+                bit_vec = (self.data[:,col_idx] == int_val)
             else:
-                bit_vac = numpy.logical_and(bit_vec, self.data[:,col_idx] == int_val)
+                bit_vec = numpy.logical_and(bit_vec, self.data[:,col_idx] == int_val)
         self.data = self.data[bit_vec, :]
         print self.data.shape
     
-    def apply(self, fn, col, new_col):
-        pass
+    def apply(self, fn, col, new_col, is_numeric):
+        self.cols.append(new_col)
+        col_idx = self.cols.index(col)
+        if col in self.non_numeric_cols:
+            source_vals = [ self.int_to_text_map[x] for x in self.data[:,col_idx] ]
+        else:
+            source_vals = [ x for x in self.data[:,col_idx] ]
+        vals = map(fn, source_vals)
+        if not is_numeric:
+            new_vals = []
+            for val in vals:
+                if val in self.text_to_int_map:
+                    d = self.text_to_int_map[val]
+                else:
+                    self.text_to_int_map[val] = self.idx
+                    self.int_to_text_map[self.idx] = val
+                    d = self.idx
+                    self.idx += 1
+                new_vals.append(d)
+            self.data = numpy.column_stack( [ self.data, new_vals ] )
+        else:
+            self.data = numpy.column_stack( [ self.data, vals ] )
+        print self.data.shape
+
+    def copy(self):
+        return c.deepcopy(self)
+
+    def printInfo(self):
+        print self.data.shape
+
+    def getCol(self, col):
+        col_idx = self.cols.index(col)
+        if col in self.non_numeric_cols:
+            return [ self.int_to_text_map[x] for x in self.data[:,col_idx] ]
+        else:
+            return c.deepcopy(self.data[:, col_idx])
+    
+    def summarize(self, cols):
+        col_idxs = [self.cols.index(col) for col in cols]
+        
