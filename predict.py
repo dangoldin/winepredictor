@@ -1,4 +1,4 @@
-import numpy, csv, random
+import numpy, csv, random, re
 import scipy.spatial as spatial
 from StringIO import StringIO
 from collections import defaultdict
@@ -32,6 +32,13 @@ def getSize(name):
         if s in name:
             return str(size)
     return '750'
+
+def getBrand(name):
+    res = re.findall(r'".*?"', name)
+    if len(res) > 0:
+        return res[0].strip('"')
+    else:
+        return ''
         
 def getSummaryStats(data):
     summary_vals = defaultdict(list)
@@ -46,6 +53,7 @@ def getSummaryStats(data):
 
 dt = DataTable(FILENAME)
 dt.apply( getSize, 'name', 'size', False)
+dt.apply( getBrand, 'name', 'brand', False)
 dt.shuffle()
 
 dt_train = dt.copy()
@@ -54,14 +62,7 @@ dt_train.split(0.75, True)
 dt_test = dt.copy()
 dt_test.split(0.75, False)
 
-years = set(dt_train.getCol('year'))
-varietals = set(dt_train.getCol('Varietal'))
-countries = set(dt_train.getCol('Country'))
-subregions = set(dt_train.getCol('SubRegion'))
-appellations = set(dt_train.getCol('Appellation'))
-sizes = set(dt_train.getCol('size'))
-
-summary = dt_train.summarize( category_cols + ['size'], 'price' )
+summary = dt_train.summarize( category_cols + ['size', 'brand'], 'price' )
 
 rows,cols = dt_test.dims()
 
@@ -69,7 +70,7 @@ diffs = []
 vals1 = []
 for i in range(rows):
     row = dt_test.getRow(i)
-    key = tuple( [row[x] for x in category_cols + ['size']] )
+    key = tuple( [row[x] for x in category_cols + ['size', 'brand']] )
     if key in summary:
         guess = summary[key][1]
     else:
