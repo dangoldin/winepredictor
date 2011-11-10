@@ -12,7 +12,7 @@ class DataTable:
         self.idx = 0
         self.loadCSVFile(csv_file)
     
-    def loadCSVFile(self, csv_file):
+    def loadCSVFile(self, csv_file, dedup=True):
         reader = csv.reader(open(csv_file, 'r'), delimiter=',', quotechar='"')
         header = None
         numeric_cols = set()
@@ -85,6 +85,7 @@ class DataTable:
                     self.idx += 1
                 new_vals.append(d)
             self.data = numpy.column_stack( [ self.data, new_vals ] )
+            self.non_numeric_cols.add(new_col)
         else:
             self.data = numpy.column_stack( [ self.data, vals ] )
         print self.data.shape
@@ -102,6 +103,36 @@ class DataTable:
         else:
             return c.deepcopy(self.data[:, col_idx])
     
-    def summarize(self, cols):
+    def summarize(self, cols, target_col):
         col_idxs = [self.cols.index(col) for col in cols]
+        target_col_idx = self.cols.index(target_col)
+        summary_source = defaultdict(list)
+        for i in range(self.data.shape[0]):
+            summary_source[ tuple([self.int_to_text_map[self.data[i,idx]] for idx in col_idxs]) ].append( self.data[i,target_col_idx] )
+        summary_final = {}
+        for key, vals in summary_source.iteritems():
+            summary_final[key] = ( len(vals), numpy.mean(vals), numpy.std(vals) )
+        return summary_final
         
+    def split(self, pct, first):
+        num_rows = int(pct * self.data.shape[0])
+        if first:
+            self.data = self.data[:num_rows,:]
+        else:
+            self.data = self.data[num_rows:,:]
+
+    def getRow(self, row_idx):
+        vals = self.data[row_idx,:]
+        final_vals = {}
+        for i,val in enumerate(vals):
+            if self.cols[i] in self.non_numeric_cols:
+                final_vals[self.cols[i]] = self.int_to_text_map[val]
+            else:
+                final_vals[self.cols[i]] = val
+        return final_vals
+
+    def dims(self):
+        return (self.data.shape[0], self.data.shape[1])
+    
+    def shuffle(self):
+        numpy.random.shuffle(self.data)

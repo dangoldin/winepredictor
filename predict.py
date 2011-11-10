@@ -12,10 +12,27 @@ col_names = [ 'name', 'year', 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN',
 category_cols = [ 'year', 'Varietal', 'Country', 'SubRegion', 'Appellation' ]
 num_cols = [ 'price', 'WS', 'RP', 'ST', 'WE', 'CG', 'GR', 'WN', 'BH', 'WS1', 'Alcohol' ]
 
-def parseName(name):
-    sizes = ['187mL', '375mL', '375 mL', '500mL', '500 mL', '1.5L', '1.5 L', '3L', '3 L', '5L', '5 L', '6L', '6 L',]
-    #print name
-
+def getSize(name):
+    sizes = {'187mL' : 187,
+             '375mL' : 375,
+             '375 mL' : 375,
+             '500mL' : 500,
+             '500 mL' : 500,
+             '750 mL' : 750,
+             '750mL' : 750,
+             '1.5L' : 1500,
+             '1.5 L' : 1500,
+             '3L' : 3000,
+             '3 L' : 3000,
+             '5L' : 5000,
+             '5 L' : 5000,
+             '6L' : 6000,
+             '6 L' : 6000}
+    for s, size in sizes.iteritems():
+        if s in name:
+            return str(size)
+    return '750'
+        
 def getSummaryStats(data):
     summary_vals = defaultdict(list)
     cnt = len(data['name'])
@@ -27,21 +44,48 @@ def getSummaryStats(data):
         #print key,':',numpy.mean(a),numpy.std(a),len(vals)
     return summary_vals
 
-def extractData(row):
-    for i,d in enumerate(row):
-        print d
-
-def firstChar(val):
-    return val[0]
-
 dt = DataTable(FILENAME)
+dt.apply( getSize, 'name', 'size', False)
+dt.shuffle()
 
-years = set(dt.getCol('year'))
-varietals = set(dt.getCol('Varietal'))
-countries = set(dt.getCol('Country'))
-subregions = set(dt.getCol('SubRegion'))
-appellations = set(dt.getCol('Appellation'))
+dt_train = dt.copy()
+dt_train.split(0.75, True)
 
+dt_test = dt.copy()
+dt_test.split(0.75, False)
+
+years = set(dt_train.getCol('year'))
+varietals = set(dt_train.getCol('Varietal'))
+countries = set(dt_train.getCol('Country'))
+subregions = set(dt_train.getCol('SubRegion'))
+appellations = set(dt_train.getCol('Appellation'))
+sizes = set(dt_train.getCol('size'))
+
+summary = dt_train.summarize( category_cols + ['size'], 'price' )
+
+rows,cols = dt_test.dims()
+
+diffs = []
+vals1 = []
+for i in range(rows):
+    row = dt_test.getRow(i)
+    key = tuple( [row[x] for x in category_cols + ['size']] )
+    if key in summary:
+        guess = summary[key][1]
+    else:
+        vals1.append(row['price'])
+        guess = 92.0
+    diffs.append(abs(guess - row['price']))
+
+#print diffs
+    
+print 'Avg L1:', numpy.mean(diffs)
+
+print 'Random avg:', numpy.mean(vals1), len(vals1)
+    
+exit()
+
+"""
 summary_info = {}
 for year in years:
     for varietal in varietals:
@@ -114,3 +158,4 @@ for i in range(10):
     vals = numpy.random.rand(5)
     res = t.query( vals )
     print vals, '=>', res, '=>', temp_data[res[1]]
+"""
