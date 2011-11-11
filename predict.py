@@ -4,6 +4,27 @@ from StringIO import StringIO
 from collections import defaultdict
 from datatable import DataTable
 
+import milk
+from milk.supervised import randomforest
+from milk.supervised.multi import one_against_one
+
+rf_learner = randomforest.rf_learner()
+learner = one_against_one(rf_learner)
+
+#from milksets import wine
+#features, labels = wine.load()
+
+#print labels.shape
+#print features.shape
+
+#model = learner.train(features, labels)
+
+#cmat,names, preds = milk.nfoldcrossvalidation(features, labels, classifier=learner, return_predictions=1)
+
+#print cmat, names, preds
+
+#exit()
+
 FILENAME = 'data/winestrain2.csv'
 
 reader = csv.reader(open(FILENAME, 'r'), delimiter=',', quotechar='"')
@@ -51,7 +72,10 @@ def getSummaryStats(data):
         #print key,':',numpy.mean(a),numpy.std(a),len(vals)
     return summary_vals
 
+print 'Loading data'
 dt = DataTable(FILENAME)
+
+print 'Transforming'
 dt.apply( getSize, 'name', 'size', False)
 dt.apply( getBrand, 'name', 'brand', False)
 dt.shuffle()
@@ -63,6 +87,27 @@ dt_test = dt.copy()
 dt_test.split(0.75, False)
 
 summary = dt_train.summarize( category_cols + ['size', 'brand'], 'price' )
+
+labels = dt_train.getCol('price')
+features = dt_train.getData(category_cols + ['size', 'brand'])
+
+print 'Training'
+model = learner.train(features, labels)
+
+print 'Cross validating'
+cmat, names, preds = milk.nfoldcrossvalidation(features, labels, classifier=learner, return_predictions=1)
+
+print cmat, names, preds
+
+labels_test = dt_test.getCol('price')
+features_test = dt_test.getData(category_cols + ['size', 'brand'])
+new_labels = model.apply(features_test)
+
+diff = labest_test - new_labels
+
+print 'Avg L1:', numpy.mean(abs(diff))
+
+exit()
 
 rows,cols = dt_test.dims()
 

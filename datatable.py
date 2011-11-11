@@ -136,3 +136,10 @@ class DataTable:
     
     def shuffle(self):
         numpy.random.shuffle(self.data)
+    
+    def getData(self, cols=None):
+        if cols is None:
+            return self.data
+        else:
+            col_idxs = [self.cols.index(col) for col in cols]
+            return self.data[:,col_idxs]
