@@ -74,6 +74,9 @@ def getSummaryStats(data):
 
 print 'Loading data'
 dt = DataTable(FILENAME)
+dt.split(0.005, True)
+print 'Table size:',
+dt.printInfo()
 
 print 'Transforming'
 dt.apply( getSize, 'name', 'size', False)
@@ -82,9 +85,13 @@ dt.shuffle()
 
 dt_train = dt.copy()
 dt_train.split(0.75, True)
+print 'Training Table size:',
+dt_train.printInfo()
 
 dt_test = dt.copy()
 dt_test.split(0.75, False)
+print 'Test Table size:',
+dt_test.printInfo()
 
 summary = dt_train.summarize( category_cols + ['size', 'brand'], 'price' )
 
@@ -94,14 +101,16 @@ features = dt_train.getData(category_cols + ['size', 'brand'])
 print 'Training'
 model = learner.train(features, labels)
 
-print 'Cross validating'
-cmat, names, preds = milk.nfoldcrossvalidation(features, labels, classifier=learner, return_predictions=1)
+#print 'Cross validating'
+#cmat, names, preds = milk.nfoldcrossvalidation(features, labels, classifier=learner, return_predictions=1)
+#print cmat, names, preds
 
-print cmat, names, preds
-
+print 'Testing'
 labels_test = dt_test.getCol('price')
 features_test = dt_test.getData(category_cols + ['size', 'brand'])
-new_labels = model.apply(features_test)
+new_labels = model.apply(features)
+
+print new_labels
 
 diff = labest_test - new_labels
 
