@@ -74,7 +74,7 @@ def getSummaryStats(data):
 
 print 'Loading data'
 dt = DataTable(FILENAME)
-dt.split(0.005, True)
+dt.split(0.10, True)
 print 'Table size:',
 dt.printInfo()
 
@@ -108,12 +108,16 @@ model = learner.train(features, labels)
 print 'Testing'
 labels_test = dt_test.getCol('price')
 features_test = dt_test.getData(category_cols + ['size', 'brand'])
-new_labels = model.apply(features)
+new_labels = []
+for i in range(features_test.shape[0]):
+    feature = features_test[i,:]
+    new_labels.append( model.apply(feature) )
 
-print new_labels
+new_labels = numpy.array(new_labels)
 
-diff = labest_test - new_labels
+diff = labels_test - new_labels
 
+#print 'Diffs:', diff
 print 'Avg L1:', numpy.mean(abs(diff))
 
 exit()
@@ -137,80 +141,3 @@ for i in range(rows):
 print 'Avg L1:', numpy.mean(diffs)
 
 print 'Random avg:', numpy.mean(vals1), len(vals1)
-    
-exit()
-
-"""
-summary_info = {}
-for year in years:
-    for varietal in varietals:
-        for country in countries:
-            for subregion in subregions:
-                for appellation in appellations:
-                    dt_tmp = dt.copy()
-                    dt_tmp.filter( {'year': year,
-                                    'Varietal': varietal,
-                                    'Country': country,
-                                    'SubRegion': subregion,
-                                    'Appellation': appellation,
-                                    })
-                    prices = dt_tmp.getCol('price')
-                    summary_info[ (year, varietal, country, subregion, appellation) ] = ( len(prices), numpy.mean(prices), numpy.std(prices) )
-                    #print 'Year: %s, %d, %f, %f' % (year, len(prices), numpy.mean(prices), numpy.std(prices))
-
-print summary_info
-
-#dt.filter( { 'Appellation': 'Napa Valley' } )
-#dt.apply( firstChar, 'name', 'first_char', False)
-#d = dt.copy()
-
-exit()
-        
-data = defaultdict(list)
-i = 0
-for row in reader:
-    if i > 0:
-        for i,d in enumerate(row):
-            col = col_names[i]
-            if d == 'NA':
-                d = -1 if col in num_cols else ''
-            if col in num_cols:
-                try:
-                    d = float(d)
-                except:
-                    print 
-            if col == 'name':
-                parseName(d)
-            data[ col ].append(d)
-    i += 1
-
-dt = DataTable(data)
-
-dt.filter( { 'Appellation': 'Napa Valley' } )
-
-
-
-exit()
-    
-for col, vals in data.iteritems():
-    print col, len(vals),
-    if col in num_cols:
-        a = numpy.array(vals)
-        new_a = a[a <> -1]
-        print numpy.mean(new_a)
-    else:
-        print 
-
-print 'Summary Stats'
-getSummaryStats(data)
-
-exit()
-
-temp_data = numpy.random.rand(1000,5)
-t = spatial.cKDTree(data=temp_data)
-
-for i in range(10):
-    vals = numpy.random.rand(5)
-    res = t.query( vals )
-    print vals, '=>', res, '=>', temp_data[res[1]]
-"""
